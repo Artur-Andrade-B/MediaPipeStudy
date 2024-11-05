@@ -1,5 +1,12 @@
 import cv2
 import mediapipe as  mp
+import numpy as np
+
+p_olho_d = [160,144,158,153,33,133]
+p_olho_e = [385,380,387,373,362,263]
+
+def calc_EAR(face,p_olho_d,p_olho_e):
+    face = np.array(val for item in colection)
 
 cap = cv2.VideoCapture(0)
 
@@ -19,7 +26,7 @@ with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence
         frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
         saida_facemesh = facemesh.process(frame)
         frame = cv2.cvtColor(frame,cv2.COLOR_RGB2BGR)
-
+        
         try:
             for face_landmarks in saida_facemesh.multi_face_landmarks:
                 mp_drawing.draw_landmarks(frame, 
