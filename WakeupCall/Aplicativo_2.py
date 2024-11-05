@@ -29,7 +29,10 @@ with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence
                                           connection_drawing_spec = mp_drawing.DrawingSpec(color=(102,204,0),thickness=1, circle_radius=1)
                                           )
                 
-        
+                face = face_landmarks
+                for id_coord, coord_xyz in enumerate(face.landmark):
+                    print(id_coord,coord_xyz)
+                
         except:
             print("Deu erro")
         
