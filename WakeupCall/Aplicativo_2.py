@@ -4,9 +4,24 @@ import numpy as np
 
 p_olho_d = [160,144,158,153,33,133]
 p_olho_e = [385,380,387,373,362,263]
+p_olhos = p_olho_e + p_olho_d
 
 def calc_EAR(face,p_olho_d,p_olho_e):
-    face = np.array(val for item in colection)
+    try:
+        face = np.array([[coord.x,coord.y] for coord in face])
+        face_e =face[p_olho_e, :]
+        face_d = face[p_olho_d, :]
+
+        ear_e = (np.linalg.norm(face_e[0] - face_e[1]) + np.linalg.norm(face_e[2] - face_e[3]) / (2*np.linalg.norm(face_e[4] - face_e[5])))
+        ear_d = (np.linalg.norm(face_d[0] - face_d[1]) + np.linalg.norm(face_d[2] - face_d[3]) / (2*np.linalg.norm(face_d[4] - face_d[5])))
+
+    except:
+        ear_e = 0.0
+        ear_d = 0.0
+
+    media_ear = (ear_e + ear_d)/2
+    return media_ear
+
 
 cap = cv2.VideoCapture(0)
 
@@ -22,7 +37,7 @@ with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence
         if not success:
             print("Ignorando o Frame vaziu da camera")
             continue
-        
+        comprimento, largura, _ = frame.shape
         frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
         saida_facemesh = facemesh.process(frame)
         frame = cv2.cvtColor(frame,cv2.COLOR_RGB2BGR)
@@ -38,7 +53,9 @@ with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence
                 
                 face = face_landmarks
                 for id_coord, coord_xyz in enumerate(face.landmark):
-                    print(id_coord,coord_xyz)
+                    if id_coord in p_olhos:
+                        coord_cv = mp_drawing._normalized_to_pixel_coordinates(coord_xyz.x,coord_xyz.y,largura,comprimento)
+                        cv2.circle(frame,coord_cv,2,(255,0,0),-1)
                 
         except:
             print("Deu erro")
