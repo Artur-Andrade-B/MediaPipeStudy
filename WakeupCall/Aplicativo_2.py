@@ -8,14 +8,16 @@ p_olhos = p_olho_e + p_olho_d
 
 def calc_EAR(face,p_olho_d,p_olho_e):
     try:
+        print("tried")
         face = np.array([[coord.x,coord.y] for coord in face])
         face_e =face[p_olho_e, :]
         face_d = face[p_olho_d, :]
-
-        ear_e = (np.linalg.norm(face_e[0] - face_e[1]) + np.linalg.norm(face_e[2] - face_e[3]) / (2*np.linalg.norm(face_e[4] - face_e[5])))
-        ear_d = (np.linalg.norm(face_d[0] - face_d[1]) + np.linalg.norm(face_d[2] - face_d[3]) / (2*np.linalg.norm(face_d[4] - face_d[5])))
-
+        print("found")
+        ear_e = (np.linalg.norm(face_e[0] - face_e[1]) + np.linalg.norm(face_e[2] - face_e[3])) / (2*np.linalg.norm(face_e[4] - face_e[5]))
+        ear_d = (np.linalg.norm(face_d[0] - face_d[1]) + np.linalg.norm(face_d[2] - face_d[3])) / (2*np.linalg.norm(face_d[4] - face_d[5]))
+        print("calculated")
     except:
+        print("error")
         ear_e = 0.0
         ear_d = 0.0
 
@@ -51,12 +53,24 @@ with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence
                                           connection_drawing_spec = mp_drawing.DrawingSpec(color=(102,204,0),thickness=1, circle_radius=1)
                                           )
                 
-                face = face_landmarks
-                for id_coord, coord_xyz in enumerate(face.landmark):
+                face = face_landmarks.landmark
+                for id_coord, coord_xyz in enumerate(face):
                     if id_coord in p_olhos:
                         coord_cv = mp_drawing._normalized_to_pixel_coordinates(coord_xyz.x,coord_xyz.y,largura,comprimento)
                         cv2.circle(frame,coord_cv,2,(255,0,0),-1)
                 
+                ear = calc_EAR(face,p_olho_d,p_olho_e)
+
+                cv2.rectangle(frame, (0,1),(290,140),(58,58,55),-1)
+                
+                cv2.putText(frame, 
+                            f"EAR: {round(ear, 2)}", 
+                            (1, 24),
+                            cv2.FONT_HERSHEY_DUPLEX,
+                            0.9, (255, 255, 255),
+                            2
+                            )
+
         except:
             print("Deu erro")
         
