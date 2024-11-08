@@ -2,10 +2,19 @@ import cv2
 import mediapipe as  mp
 import numpy as np
 import time
+import pygame
+
+pygame.mixer.init()
 
 p_olho_d = [160,144,158,153,33,133]
 p_olho_e = [385,380,387,373,362,263]
 p_olhos = p_olho_e + p_olho_d
+sound_state = False  
+def play_alarm():
+    pygame.mixer.music.load("WakeupCall/audio/alarm1.mp3", "alarme")
+    pygame.mixer.music.play()
+def stop_alarm():
+    pygame.mixer.music.stop()
 
 def calc_EAR(face,p_olho_d,p_olho_e):
     try:
@@ -25,7 +34,18 @@ def calc_EAR(face,p_olho_d,p_olho_e):
     media_ear = (ear_e + ear_d)/2
     return media_ear
 
-limiar = 0.27
+p_boca = [82, 87, 13, 14, 312, 317, 78, 308]
+def calculo_mar(face, p_boca):
+    try:
+        face = np.array([[coord.x, coord.y] for coord in face])
+        face_boca = face[p_boca, :]
+
+        mar = (np.linalg.norm(face_boca[0] - face_boca[1]) + np.linalg.norm(face_boca[2] - face_boca[3]) + np.linalg.norm(face_boca[4] - face_boca[5])) / (2 * (np.linalg.norm(face_boca[6] - face_boca[7])))
+    except:
+        mar = 0.0
+    return mar
+limiar = 0.29
+m_limiar = 0.18
 sleeping = 0
 
 
@@ -61,9 +81,13 @@ with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence
                 for id_coord, coord_xyz in enumerate(face):
                     if id_coord in p_olhos:
                         coord_cv = mp_drawing._normalized_to_pixel_coordinates(coord_xyz.x,coord_xyz.y,largura,comprimento)
-                        cv2.circle(frame,coord_cv,2,(255,0,0),-1)
+                        cv2.circle(frame,coord_cv,2,(255,0,0),-1),
+                    if id_coord in p_boca:
+                        coord_cv = mp_drawing._normalized_to_pixel_coordinates(coord_xyz.x,coord_xyz.y,largura,comprimento)
+                        cv2.circle(frame,coord_cv,2,(255,150,0),-1),   
                 
                 ear = calc_EAR(face,p_olho_d,p_olho_e)
+                mar = calculo_mar(face,p_boca)
 
                 cv2.rectangle(frame, (0,1),(290,140),(58,58,55),-1)
                 
@@ -74,33 +98,53 @@ with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence
                             0.9, (255, 255, 255),
                             2
                             )
+                cv2.putText(frame, 
+                            f"MAR: {round(mar, 2)}", 
+                            (1, 50),
+                            cv2.FONT_HERSHEY_DUPLEX,
+                            0.9, (255, 255, 255),
+                            2
+                            )
                 
-                if ear < limiar:
+                if ear < limiar and mar < m_limiar:
                     t_inicial = time.time() if dormindo == 0 else t_inicial
                     dormindo = 1
-
-                if dormindo == 1 and ear >= limiar:
+                    
+                else:
                     dormindo = 0
 
                 t_final = time.time()
-                            
+          
                 tempo = (t_final-t_inicial) if dormindo == 1 else 0.0
                 cv2.putText(frame, f"Tempo: {round(tempo, 3)}", (1, 80),
                                         cv2.FONT_HERSHEY_DUPLEX,
                                         0.9, (255, 255, 255), 2)
-                
                 if tempo>=1.5:
+
                     cv2.rectangle(frame, (30, 400), (610, 452), (109, 233, 219), -1)
                     cv2.putText(frame, f"Muito tempo com olhos fechados!", (80, 435),
                                     cv2.FONT_HERSHEY_DUPLEX,
                                     0.85, (58,58,55), 1)
+                    if not sound_state:  # Only play the alarm if it's not already playing
+                            play_alarm()  # Start playing the alarm
+                            sound_state = True  # Set sound_state to True to indicate alarm is playing
+
+                else:
+                    if sound_state:
+                        stop_alarm()
+                        sound_state = False
+                
+                if not sound_state:
+                    stop_alarm()
+
                     
         except:
             print("Deu erro")
         
         finally:
+            
             print("encerrando o processo")
-        
+
         cv2.imshow("Camera",frame)
 
         if cv2.waitKey(10) & 0xFF == ord("c"):
